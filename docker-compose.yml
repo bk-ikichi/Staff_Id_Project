@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: staff-app-db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: staff_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./initdb.d:/docker-entrypoint-initdb.d # 初期SQLを実行する設定
+      - postgres_data:/var/lib/postgresql/data # データを永続化
+
+volumes:
+  postgres_data:
