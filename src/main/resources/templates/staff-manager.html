@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スタッフ一覧 | スタッフカードシステム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-brand-red: #D62300;
+            --color-brand-brown: #502314;
+            --color-brand-cream: #F5EBDC;
+            --color-brand-light: #FDF8F2;
+        }
+    </style>
+</head>
+<body class="bg-brand-cream min-h-screen text-brand-brown font-sans flex">
+
+<div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+<main class="flex-1 p-4 md:p-8 ml-0 md:ml-64 transition-all w-full">
+
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-black tracking-wider">スタッフ管理</h1>
+            <p class="text-sm font-bold text-amber-800 mt-1">システムを利用するスタッフのアカウント確認および編集を行います。</p>
+        </div>
+        <a th:href="@{/users/new}" class="w-fit bg-brand-red hover:bg-red-700 text-brand-light hover:text-white font-black text-sm px-6 py-3 rounded-full shadow transition-all flex items-center gap-1 cursor-pointer">
+            <span>＋</span> 新規登録・一括登録
+        </a>
+    </div>
+
+    <div class="mb-6 bg-brand-light p-4 rounded-2xl border-2 border-amber-200 shadow-sm">
+        <p class="text-xs font-black text-amber-900 mb-2 flex items-center gap-1">リアルタイム絞り込み検索</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-[11px] font-bold text-stone-500 mb-1">所属店舗</label>
+                <select id="filterStore" class="w-full p-2.5 rounded-xl border-2 border-amber-200 bg-white text-xs font-bold text-brand-brown focus:outline-none focus:border-brand-red cursor-pointer">
+                    <option value="">すべての店舗</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-stone-500 mb-1">権限 (Role)</label>
+                <select id="filterRole" class="w-full p-2.5 rounded-xl border-2 border-amber-200 bg-white text-xs font-bold text-brand-brown focus:outline-none focus:border-brand-red cursor-pointer">
+                    <option value="">すべての権限</option>
+                    <option value="STAFF">STAFF</option>
+                    <option value="MANAGER">MANAGER</option>
+                    <option value="ADMIN">ADMIN</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-stone-500 mb-1">ステータス</label>
+                <select id="filterStatus" class="w-full p-2.5 rounded-xl border-2 border-amber-200 bg-white text-xs font-bold text-brand-brown focus:outline-none focus:border-brand-red cursor-pointer">
+                    <option value="">すべての状態</option>
+                    <option value="有効">有効</option>
+                    <option value="無効">無効</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${errorMessage}" class="bg-red-50 border-2 border-brand-red text-brand-red text-sm font-bold p-4 rounded-xl mb-6">
+        <p th:text="${errorMessage}">エラーが発生しました</p>
+    </div>
+
+    <div th:if="${successMessage}" class="bg-emerald-50 border-2 border-emerald-600 text-emerald-700 text-sm font-bold p-4 rounded-xl mb-6">
+        <p th:text="${successMessage}">処理が成功しました</p>
+    </div>
+
+    <div class="bg-brand-light p-6 rounded-2xl border-2 border-amber-200 shadow-md overflow-x-auto w-full">
+        <div class="flex items-center justify-between mb-4 border-b-2 border-amber-200 pb-2">
+            <h2 class="text-xl font-black">スタッフ一覧</h2>
+            <span class="bg-amber-100 text-amber-900 text-xs font-black px-3 py-1 rounded-full">
+                該当: <span id="matchCount" th:text="${#lists.size(users)}">0</span> / <span th:text="${#lists.size(users)}">0</span> 名
+            </span>
+        </div>
+
+        <table class="w-full text-left border-collapse min-w-[950px]">
+            <thead>
+            <tr class="border-b-2 border-amber-200 text-xs font-black uppercase text-amber-800">
+                <th class="py-3 px-3">スタッフID</th>
+                <th class="py-3 px-3">氏名</th>
+                <th class="py-3 px-3">所属店舗</th>
+                <th class="py-3 px-3">権限 (Role)</th>
+                <th class="py-3 px-3">ステータス</th>
+                <th class="py-3 px-3 text-center">操作アクション</th>
+            </tr>
+            </thead>
+            <tbody id="staffTableBody" class="text-sm font-bold divide-y divide-amber-100 bg-white">
+            <tr th:each="userItem : ${users}"
+                th:data-id="${userItem.id}"
+                th:data-staffid="${userItem.staffId}"
+                th:data-name="${userItem.name}"
+                th:data-rawrole="${userItem.role}"
+                th:data-rawstatus="${userItem.status}"
+                th:data-store="${userItem.store != null ? userItem.store.comName : '未所属'}"
+                th:data-role="${userItem.role == 'STORE_MANAGER' ? 'MANAGER' : #strings.toUpperCase(userItem.role)}"
+                th:data-status="${userItem.status == 'ACTIVE' ? '有効' : '無効'}"
+                class="staff-row hover:bg-amber-50/50 transition-colors">
+
+                <td class="py-4 px-3 font-black text-brand-brown font-mono" th:text="${userItem.staffId}">staff001</td>
+                <td class="py-4 px-3 text-amber-900" th:text="${userItem.name}">未設定</td>
+                <td class="py-4 px-3 text-brand-brown" th:text="${userItem.store != null ? userItem.store.comName : '未所属'}">盛岡店</td>
+
+                <td class="py-4 px-3">
+                    <span class="px-2.5 py-1 rounded-md text-xs font-black"
+                          th:classappend="${userItem.role == 'ADMIN' ? 'bg-red-100 text-brand-red' : (userItem.role == 'STORE_MANAGER' ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-700')}"
+                          th:text="${userItem.role == 'STORE_MANAGER' ? 'MANAGER' : #strings.toUpperCase(userItem.role)}">STAFF</span>
+                </td>
+
+                <td class="py-4 px-3">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-black"
+                          th:classappend="${userItem.status == 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-brand-red'}"
+                          th:text="${userItem.status == 'ACTIVE' ? '有効' : '無効'}">有効</span>
+                </td>
+
+                <td class="py-4 px-3">
+                    <div class="flex items-center justify-start md:justify-center gap-3 w-full max-w-[420px] mx-auto">
+
+                        <button type="button" onclick="openEditModal(this.closest('tr'))"
+                                class="flex-1 min-w-[70px] text-center px-3 py-2 rounded-xl border-2 border-brand-brown bg-brand-light hover:bg-amber-100 text-brand-brown text-xs font-black shadow-sm transition-all cursor-pointer">
+                            編集
+                        </button>
+
+                        <form th:action="@{/users/{id}/passwordReset(id=${userItem.id})}" method="post"
+                              onsubmit="return handlePasswordReset(this);" class="flex-2 min-w-[140px]">
+                            <input type="hidden" name="password" value="wapper" />
+                            <button type="submit" class="w-full text-center px-3 py-2 rounded-xl border-2 border-amber-500 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-black shadow-sm transition-all cursor-pointer">
+                                パスワードリセット
+                            </button>
+                        </form>
+
+                        <form th:action="@{/users/{id}/status(id=${userItem.id})}" method="post"
+                              th:data-status="${userItem.status}" onsubmit="return handleStatusToggle(this);" class="flex-2 min-w-[120px]">
+                            <input type="hidden" name="status" th:value="${userItem.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}" />
+                            <button type="submit"
+                                    th:class="${userItem.status == 'ACTIVE' ? 'bg-red-50 hover:bg-red-100 border-2 border-brand-red text-brand-red' : 'bg-stone-50 hover:bg-stone-100 border-2 border-stone-400 text-stone-600'}"
+                                    class="w-full text-center px-3 py-2 rounded-xl text-xs font-black shadow-sm transition-all cursor-pointer">
+                                <span th:text="${userItem.status == 'ACTIVE' ? 'アカウント無効化' : 'アカウント復元'}">状態切替</span>
+                            </button>
+                        </form>
+
+                    </div>
+                </td>
+            </tr>
+
+            <tr id="noResultRow" class="hidden">
+                <td colspan="6" class="py-12 text-center text-sm font-bold text-amber-700 bg-amber-50/20">
+                    該当する条件のスタッフが見つかりません。
+                </td>
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(users)}">
+                <td colspan="6" class="py-12 text-center text-sm font-bold text-amber-700 bg-amber-50/20">
+                    登録されているスタッフがまだいません。
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<div id="editModal" class="fixed inset-0 bg-slate-500/40 backdrop-blur-[1px] z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white p-6 rounded-2xl border-2 border-amber-200 shadow-xl w-full max-w-md mx-4">
+        <div class="flex items-center justify-between border-b-2 border-amber-200 pb-3 mb-4">
+            <h3 class="text-lg font-black text-brand-brown">スタッフ情報の編集</h3>
+            <button type="button" onclick="closeEditModal()" class="text-stone-400 hover:text-stone-700 font-bold text-xl cursor-pointer">✕</button>
+        </div>
+
+        <form id="editForm" method="post" action="">
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-black text-amber-900 mb-1">スタッフID</label>
+                    <input type="text" id="modalStaffId" name="staffId" required
+                           class="w-full p-2.5 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-amber-900 mb-1">氏名</label>
+                    <input type="text" id="modalName" name="name" required
+                           class="w-full p-2.5 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-amber-900 mb-1">権限 (Role)</label>
+                    <select id="modalRole" name="role" class="w-full p-2.5 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red cursor-pointer">
+                        <option value="STAFF">STAFF</option>
+                        <option value="STORE_MANAGER">MANAGER</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-amber-900 mb-1">ステータス</label>
+                    <select id="modalStatus" name="status" class="w-full p-2.5 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red cursor-pointer">
+                        <option value="ACTIVE">ACTIVE (有効)</option>
+                        <option value="INACTIVE">INACTIVE (無効)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 border-t border-amber-100 pt-4">
+                <button type="button" onclick="closeEditModal()"
+                        class="px-4 py-2 rounded-xl border-2 border-stone-300 text-stone-600 text-xs font-black hover:bg-stone-100 cursor-pointer">
+                    キャンセル
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 rounded-xl bg-brand-red hover:bg-red-700 text-brand-light text-xs font-black shadow transition-all cursor-pointer">
+                    保存する
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const filterStore = document.getElementById('filterStore');
+    const filterRole = document.getElementById('filterRole');
+    const filterStatus = document.getElementById('filterStatus');
+    const staffRows = document.querySelectorAll('.staff-row');
+    const matchCount = document.getElementById('matchCount');
+    const noResultRow = document.getElementById('noResultRow');
+
+    function initStoreFilterOptions() {
+        const storeSet = new Set();
+        staffRows.forEach(row => {
+            const storeName = row.getAttribute('data-store');
+            if (storeName) {
+                storeSet.add(storeName);
+            }
+        });
+
+        storeSet.forEach(storeName => {
+            const option = document.createElement('option');
+            option.value = storeName;
+            option.textContent = storeName;
+            filterStore.appendChild(option);
+        });
+    }
+
+    initStoreFilterOptions();
+
+    function doFilter() {
+        const selectedStore = filterStore.value;
+        const selectedRole = filterRole.value;
+        const selectedStatus = filterStatus.value;
+        let visibleCount = 0;
+
+        staffRows.forEach(row => {
+            const rowStore = row.getAttribute('data-store');
+            const rowRole = row.getAttribute('data-role');
+            const rowStatus = row.getAttribute('data-status');
+
+            const matchStore = !selectedStore || rowStore === selectedStore;
+            const matchRole = !selectedRole || rowRole === selectedRole;
+            const matchStatus = !selectedStatus || rowStatus === selectedStatus;
+
+            if (matchStore && matchRole && matchStatus) {
+                row.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+
+        matchCount.textContent = visibleCount;
+        if (visibleCount === 0 && staffRows.length > 0) {
+            noResultRow.classList.remove('hidden');
+        } else {
+            noResultRow.classList.add('hidden');
+        }
+    }
+
+    filterStore.addEventListener('change', doFilter);
+    filterRole.addEventListener('change', doFilter);
+    filterStatus.addEventListener('change', doFilter);
+
+    function handleStatusToggle(form) {
+        const currentStatus = form.getAttribute('data-status');
+        const message = currentStatus === 'ACTIVE'
+            ? "このスタッフアカウントを無効（論理削除）にしますか？"
+            : "このスタッフアカウントを有効に戻しますか？";
+        return confirm(message);
+    }
+
+    function handlePasswordReset(form) {
+        return confirm("このスタッフのパスワードを初期パスワード「wapper」にリセットします。よろしいですか？\n※次回ログイン時にパスワード変更が強制されます。");
+    }
+
+    const editModal = document.getElementById('editModal');
+    const editForm = document.getElementById('editForm');
+
+    function openEditModal(row) {
+        const id = row.getAttribute('data-id');
+        const staffId = row.getAttribute('data-staffid');
+        const name = row.getAttribute('data-name');
+        const role = row.getAttribute('data-rawrole');
+        const status = row.getAttribute('data-rawstatus');
+
+        document.getElementById('modalStaffId').value = staffId;
+        document.getElementById('modalName').value = name;
+        document.getElementById('modalRole').value = role;
+        document.getElementById('modalStatus').value = status;
+
+        editForm.action = `/users/${id}/edit`;
+
+        editModal.classList.remove('hidden');
+        setTimeout(() => {
+            editModal.classList.remove('opacity-0');
+        }, 10);
+    }
+
+    function closeEditModal() {
+        editModal.classList.add('opacity-0');
+        setTimeout(() => {
+            editModal.classList.add('hidden');
+        }, 300);
+    }
+
+    editModal.addEventListener('click', (e) => {
+        if (e.target === editModal) closeEditModal();
+    });
+</script>
+</body>
+</html>

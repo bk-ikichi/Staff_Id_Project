@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スタッフ登録 | スタッフカードシステム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-brand-red: #D62300;
+            --color-brand-brown: #502314;
+            --color-brand-cream: #F5EBDC;
+            --color-brand-light: #FDF8F2;
+        }
+    </style>
+</head>
+<body class="bg-brand-cream min-h-screen text-brand-brown font-sans flex">
+
+<div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+<main class="flex-1 p-4 md:p-8 ml-0 md:ml-64 transition-all w-full">
+
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-black tracking-wider">スタッフ登録</h1>
+            <p class="text-sm font-bold text-amber-800 mt-1">個別でのアカウント登録、またはExcelファイルを用いた一括登録を行います。</p>
+        </div>
+        <a th:href="@{/users}" class="w-fit bg-brand-brown hover:bg-amber-950 text-brand-light font-black text-xs px-5 py-2.5 rounded-full shadow transition-all flex items-center gap-1 cursor-pointer">
+            <span>⬅</span> 一覧に戻る
+        </a>
+    </div>
+
+    <div class="space-y-6">
+
+        <div class="bg-brand-light p-6 rounded-2xl border-2 border-amber-200 shadow-md">
+            <h2 class="text-lg font-black mb-4 border-b-2 border-amber-200 pb-2 flex items-center gap-2">
+                👤 個別登録フォーム
+            </h2>
+
+            <form th:action="@{/users/register}" th:object="${newUser}" method="post" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-black mb-1">スタッフID</label>
+                        <input type="text" th:field="*{staffId}" required placeholder="例: staff005"
+                               class="w-full p-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black mb-1">名前</label>
+                        <input type="text" th:field="*{name}" required placeholder="例: 山田 太郎"
+                               class="w-full p-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black mb-1">所属店舗</label>
+                        <select th:field="*{storeId}" required
+                                class="w-full p-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red">
+                            <option value="" disabled selected>選択してください</option>
+                            <option th:each="store : ${stores}"
+                                    th:value="${store.id}"
+                                    th:text="${store.comName}">店舗名</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black mb-1">役割 (Role)</label>
+                        <select th:field="*{role}" class="w-full p-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red">
+                            <option value="STAFF">一般スタッフ</option>
+                            <option value="STORE_MANAGER">店長</option>
+                            <option value="ADMIN">管理者</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="w-full md:w-64 bg-brand-red hover:bg-red-700 text-brand-light font-black text-sm p-3 rounded-full shadow transition-all cursor-pointer">
+                        個別にスタッフを登録する
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-brand-light p-6 rounded-2xl border-2 border-amber-200 shadow-md">
+            <h2 class="text-lg font-black mb-4 border-b-2 border-amber-200 pb-2 flex items-center gap-2">
+                📊 Excel一括アップロード
+            </h2>
+
+            <div class="mb-4 bg-amber-50/40 rounded-xl border border-amber-200 overflow-hidden text-xs">
+                <button type="button" id="toggleSampleBtn" class="w-full p-3 text-left font-black text-amber-950 flex justify-between items-center bg-amber-100/50 hover:bg-amber-100 transition-colors focus:outline-none">
+                    <span>💡 アップロード用Excelのサンプルフォーマットを確認する</span>
+                    <span id="arrowIcon" class="transform transition-transform duration-200">▼</span>
+                </button>
+
+                <div id="sampleContent" class="hidden p-4 space-y-3 bg-white border-t border-amber-200">
+                    <p class="font-bold text-stone-600">Excelの1行目に以下のヘッダー（列名）を記述し、2行目からスタッフ情報を入力してください。</p>
+                    <div class="overflow-x-auto rounded-lg border border-stone-200">
+                        <table class="w-full text-left font-bold border-collapse">
+                            <thead class="bg-stone-100 text-stone-700 font-black">
+                            <tr>
+                                <th class="p-2 border-b border-stone-200">A列 (staffId)</th>
+                                <th class="p-2 border-b border-stone-200">B列 (name)</th>
+                                <th class="p-2 border-b border-stone-200">C列 (storeId)</th>
+                                <th class="p-2 border-b border-stone-200">D列 (role)</th>
+                            </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stone-100 text-stone-600 bg-stone-50/30">
+                            <tr>
+                                <td class="p-2 font-mono">staff101</td>
+                                <td class="p-2">岩手 太郎</td>
+                                <td class="p-2">1 <span class="text-[10px] font-normal text-stone-400">(※数値の店舗ID)</span></td>
+                                <td class="p-2 font-mono text-brand-red">STAFF</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 font-mono">staff102</td>
+                                <td class="p-2">盛岡 花子</td>
+                                <td class="p-2">2</td>
+                                <td class="p-2 font-mono text-brand-red">STORE_MANAGER</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-[11px] text-stone-500 font-bold space-y-1">
+                        <p>⚠️ 注意事項:</p>
+                        <p>・役割(role)に指定できる値は <span class="font-mono bg-stone-100 px-1 rounded text-brand-brown">STAFF</span>, <span class="font-mono bg-stone-100 px-1 rounded text-brand-brown">STORE_MANAGER</span>, <span class="font-mono bg-stone-100 px-1 rounded text-brand-brown">ADMIN</span> です。</p>
+                        <p>・初期パスワードはシステムによって一律で <span class="font-mono bg-stone-100 px-1 rounded text-brand-red">Welcome2026</span> が自動設定されるため、Excel側にパスワード列は不要です。</p>
+                    </div>
+                </div>
+            </div>
+
+            <form th:action="@{/users/upload}" method="post" enctype="multipart/form-data" class="space-y-4">
+
+                <div id="previewArea" class="hidden space-y-2">
+                    <label class="block text-xs font-black text-amber-900">📄 読み取り内容のプレビュー確認（確定していません）</label>
+                    <div class="border-2 border-amber-200 rounded-xl overflow-x-auto bg-amber-50/30">
+                        <table class="w-full text-left text-sm font-bold border-collapse">
+                            <thead class="bg-amber-100 text-amber-800 font-black text-xs uppercase">
+                            <tr>
+                                <th class="p-3 border-b border-amber-200">スタッフID</th>
+                                <th class="p-3 border-b border-amber-200">名前</th>
+                                <th class="p-3 border-b border-amber-200">所属店舗ID</th>
+                                <th class="p-3 border-b border-amber-200">役割</th>
+                            </tr>
+                            </thead>
+                            <tbody id="previewTableBody" class="divide-y divide-amber-100 text-brand-brown bg-white">
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-[11px] text-emerald-700 font-bold">上記の内容に間違いがなければ、最下部のアップロードボタンを押してください。</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black mb-1">Excelファイル選択 (.xlsx / .xls)</label>
+                    <div class="relative group border-2 border-dashed border-amber-300 rounded-xl p-8 bg-white hover:bg-amber-50/30 transition-all flex flex-col items-center justify-center text-center cursor-pointer">
+                        <input type="file" id="excelFile" name="file" accept=".xlsx, .xls" required
+                               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+
+                        <div id="uploadPrompt" class="space-y-1">
+                            <div class="text-3xl">📥</div>
+                            <p class="text-base font-black text-brand-brown group-hover:text-brand-red transition-colors">ここにExcelファイルをドラッグ＆ドロップ</p>
+                            <p class="text-xs font-bold text-stone-400">または クリックしてファイルを選択</p>
+                        </div>
+
+                        <div id="fileNameDisplay" class="hidden text-base font-black text-brand-red flex items-center gap-1.5">
+                            📊 <span id="fileNameText">ファイル名.xlsx</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" id="uploadButton" disabled
+                            class="w-full md:w-64 bg-stone-300 text-stone-500 font-black text-sm p-3 rounded-full shadow transition-all cursor-not-allowed">
+                        一括アップロードを実行する
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+<script>
+    // アコーディオンの開閉
+    const toggleSampleBtn = document.getElementById('toggleSampleBtn');
+    const sampleContent = document.getElementById('sampleContent');
+    const arrowIcon = document.getElementById('arrowIcon');
+
+    toggleSampleBtn.addEventListener('click', () => {
+        const isHidden = sampleContent.classList.contains('hidden');
+        if (isHidden) {
+            sampleContent.classList.remove('hidden');
+            arrowIcon.style.transform = 'rotate(180deg)';
+        } else {
+            sampleContent.classList.add('hidden');
+            arrowIcon.style.transform = 'rotate(0deg)';
+        }
+    });
+
+    // ファイル選択時のプレビュー切り替え
+    document.getElementById('excelFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const previewArea = document.getElementById('previewArea');
+        const previewTableBody = document.getElementById('previewTableBody');
+        const uploadPrompt = document.getElementById('uploadPrompt');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const fileNameText = document.getElementById('fileNameText');
+        const uploadButton = document.getElementById('uploadButton');
+
+        if (file) {
+            fileNameText.textContent = file.name;
+            uploadPrompt.classList.add('hidden');
+            fileNameDisplay.classList.remove('hidden');
+
+            uploadButton.disabled = false;
+            uploadButton.classList.remove('bg-stone-300', 'text-stone-500', 'cursor-not-allowed');
+            uploadButton.classList.add('bg-brand-brown', 'hover:bg-amber-950', 'text-brand-light', 'cursor-pointer');
+
+            // ダミー表示用データ
+            previewTableBody.innerHTML = `
+                    <tr class="hover:bg-amber-50/40">
+                        <td class="p-3 border-b border-amber-100 font-mono">ex-staff101</td>
+                        <td class="p-3 border-b border-amber-100">鈴木 一郎</td>
+                        <td class="p-3 border-b border-amber-100">1</td>
+                        <td class="p-3 border-b border-amber-100">STAFF</td>
+                    </tr>
+                    <tr class="hover:bg-amber-50/40">
+                        <td class="p-3 border-b border-amber-100 font-mono">ex-staff102</td>
+                        <td class="p-3 border-b border-amber-100">佐藤 次郎</td>
+                        <td class="p-3 border-b border-amber-100">2</td>
+                        <td class="p-3 border-b border-amber-100">STORE_MANAGER</td>
+                    </tr>
+                `;
+            previewArea.classList.remove('hidden');
+        } else {
+            previewArea.classList.add('hidden');
+            uploadPrompt.classList.remove('hidden');
+            fileNameDisplay.classList.add('hidden');
+            uploadButton.disabled = true;
+            uploadButton.classList.add('bg-stone-300', 'text-stone-500', 'cursor-not-allowed');
+            uploadButton.classList.remove('bg-brand-brown', 'hover:bg-amber-950', 'text-brand-light', 'cursor-pointer');
+        }
+    });
+</script>
+</body>
+</html>

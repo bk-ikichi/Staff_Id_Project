@@ -40,7 +40,16 @@ public class StoreService {
         return store;
     }
 
-    public void changeStoreStatus(Integer id, Boolean isActive) {
-        storeRepository.updateActiveStatus(id, isActive);
+    // 📄 StoreService.java 内に追記してください
+
+    public void updateStoreFields(Integer id, String comId, String comName, String location) {
+        if (comId == null || comId.trim().isEmpty()) {
+            throw new RuntimeException("店舗IDを入力してください。");
+        }
+        if (comName == null || comName.trim().isEmpty()) {
+            throw new RuntimeException("店舗名を入力してください。");
+        }
+
+        storeRepository.updateStoreFields(id, comId.trim(), comName.trim(), location);
     }
 }

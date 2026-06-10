@@ -14,24 +14,65 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    public SecurityConfig() {
+        // JwtAuthenticationFilterのDIは不要になったため削除
+    }
+
+    /**
+     * パスワードエンコーダー
+     */
     @Bean
-    public PasswordEncoder bCryptPasswordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * 認証マネージャー
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
+    /**
+     * セキュリティフィルターチェーン（Thymeleaf・セッション管理用）
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // API開発なので一旦オフ
+                // HTMLフォームからの通常アクセスになるため、CORS設定は不要（削除）
+
+                // CSRF対策：今回は独自コントローラーでログイン処理を行うため一旦無効化
+                .csrf(csrf -> csrf.disable())
+
+                // セッション管理：STATELESSから、通常のセッション利用（状態保持）へ変更
+                .sessionManagement(session -> session
+                        .maximumSessions(1) // 同一ユーザーの重複ログイン制限（必要に応じて）
+                )
+
+                // 認可設定
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // ログインAPIなどは全員許可
-                        .anyRequest().permitAll() // 開発初期はすべて許可しておくと楽です
+                        // ログイン画面、ログアウト処理、エラー画面は認証なしでアクセス可能
+                        .requestMatchers("/auth/login", "/auth/logout", "/error").permitAll()
+                        // 静的ファイル（CSS/JS/画像等）を追加した際のための解放設定
+                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                        // それ以外の全ての画面（/users, /store, /usage）はログイン必須
+                        .anyRequest().authenticated()
+                )
+
+                // 独自コントローラー（AuthController）でセッション制御するため標準フォームは無効化
+                .formLogin(form -> form.disable())
+
+                // ログアウトの設定
+                .logout(logout -> logout
+                        .logoutUrl("/auth/logout")
+                        .logoutSuccessUrl("/auth/login")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
                 );
+
+        // JWT フィルター（jwtAuthenticationFilter）の追加処理を削除
+
         return http.build();
     }
 }

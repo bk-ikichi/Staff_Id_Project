@@ -27,7 +27,8 @@ public class StoreRepository {
         return storeMapper.findByIdWithUsers(id);
     }
 
-    public void updateActiveStatus(Integer id, Boolean isActive){
-        storeMapper.updateActiveStatus(id, isActive);
+    // StoreRepository.java 内に追記してください
+    public void updateStoreFields(Integer id, String comId, String comName, String location) {
+        storeMapper.updateStoreFields(id, comId, comName, location);
     }
 }

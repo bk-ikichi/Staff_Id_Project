@@ -23,8 +23,11 @@ public class UserRepository {
         return  userMapper.insertUser(user);
     }
 
-    public void updateUserName(Integer id, String name){
-        userMapper.updateUserName(id, name);
+    // 📄 UserRepository.java（またはUserService.java）に追記
+
+    public void updateUserFields(Integer id, String staffId, String name, String role, String status) {
+        // 💡 インジェクションしている mapper を呼び出してそのまま引数を渡します
+        userMapper.updateUserFields(id, staffId, name, role, status);
     }
 
     public void updateStatus(Integer id, String status) {

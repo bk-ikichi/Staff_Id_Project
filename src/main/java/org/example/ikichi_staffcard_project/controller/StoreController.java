@@ -1,20 +1,15 @@
 package org.example.ikichi_staffcard_project.controller;
 
-
 import org.example.ikichi_staffcard_project.dto.Store;
-import org.example.ikichi_staffcard_project.repository.StoreRepository;
 import org.example.ikichi_staffcard_project.service.StoreService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponents;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/store")
+@Controller
+@RequestMapping("/store")
 public class StoreController {
     private final StoreService storeService;
 
@@ -22,33 +17,50 @@ public class StoreController {
         this.storeService = storeService;
     }
 
-//    一覧取得
+    // 一覧取得・画面表示
     @GetMapping
-    public ResponseEntity<List<Store>> getAll(){
+    public String getAll(Model model) {
         List<Store> stores = storeService.findAll();
-        return ResponseEntity.ok(stores);
+        model.addAttribute("stores", stores);
+
+        // 💡 【追加】HTMLフォーム用の空オブジェクトを「newStore」という名前で引き渡す
+        if (!model.containsAttribute("newStore")) {
+            model.addAttribute("newStore", new Store());
+        }
+
+        return "store-manager";
     }
 
-//    店の追加
-    @PostMapping
-    public ResponseEntity<Store> insert(@RequestBody Store store, UriComponentsBuilder builder){
-        Store createdStore = storeService.insert(store);
-
-        URI Location = builder.path("/api/store/{id}").buildAndExpand(createdStore.getComId()).toUri();
-        return ResponseEntity.created(Location).build();
+    // 店の追加（💡 HTML側のパスに合わせて /register を追加）
+    @PostMapping("/register")
+    public String insert(@ModelAttribute("newStore") Store store) {
+        storeService.insert(store);
+        return "redirect:/store";
     }
 
-//    id:〇番の店に対して、そこに所属しているユーザーの一覧を出す
+    // 指定店舗の所属ユーザー一覧表示
     @GetMapping("/{id}/all")
-    public ResponseEntity<Store> getAllByStoreWithUsers(@PathVariable Integer id){
+    public String getAllByStoreWithUsers(@PathVariable Integer id, Model model) {
         Store findStoreWithUsers = storeService.findByStoreWithUsers(id);
-
-        return ResponseEntity.ok(findStoreWithUsers);
+        model.addAttribute("storeWithUsers", findStoreWithUsers);
+        return "store-detail";
     }
 
-    @PutMapping("/{id}/active")
-    public ResponseEntity<String> updateStoreStatus(@PathVariable Integer id, @RequestBody Boolean isActive){
-        storeService.changeStoreStatus(id, isActive);
-        return ResponseEntity.ok(id + " 番の稼働ステータスを " + isActive + " にしました");
+    // StoreController.java 内に追記してください
+    @PostMapping("/{id}/edit")
+    public String editStoreFields(@PathVariable("id") Integer id,
+                                  @RequestParam("comId") String comId,
+                                  @RequestParam("comName") String comName,
+                                  @RequestParam("location") String location,
+                                  org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+        try {
+            storeService.updateStoreFields(id, comId, comName, location);
+            redirectAttributes.addFlashAttribute("successMessage", "店舗情報を更新しました。");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        // 🔄 店舗一覧画面のURL（/stores など）に合わせて適宜リダイレクト先を調整してください
+        return "redirect:/store";
     }
 }

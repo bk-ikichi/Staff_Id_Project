@@ -9,8 +9,15 @@ import java.util.List;
 public interface UserMapper {
 
 //    ユーザーの一覧
-    @Select("SELECT id, staff_id AS staffId, name, role, store_id AS storeId, " +
-            "status, created_at AS createdAt, updated_at AS updatedAt FROM users")
+    @Select("SELECT u.id, u.staff_id AS staffId, u.name, u.role, u.store_id AS storeId, " +
+            "u.status, u.created_at AS createdAt, u.updated_at AS updatedAt, " +
+            "s.id AS \"store.id\", " +
+            "s.com_id AS \"store.comId\", " +
+            "s.com_name AS \"store.comName\", " +
+            "s.location AS \"store.location\", " +
+            "s.is_active AS \"store.active\" " +
+            "FROM users u " +
+            "LEFT JOIN stores s ON u.store_id = s.id")
     List<User> findAll();
 
 //    ユーザーのインサート
@@ -23,9 +30,14 @@ public interface UserMapper {
     @Select("SELECT id,staff_id AS staffId,name,role,store_id AS storeId,status FROM users WHERE store_id = #{storeId}")
     List<User> findByStoreId(Integer storeId);
 
-//    名前の変更
-    @Update("UPDATE users SET name = #{name} WHERE id = #{id}")
-    void updateUserName(@Param("id") Integer id, @Param("name") String name);
+// 📄 UserMapper.java の一番下に以下のメソッドを追加してください
+
+    @Update("UPDATE users SET staff_id = #{staffId}, name = #{name}, role = #{role}, status = #{status} WHERE id = #{id}")
+    void updateUserFields(@Param("id") Integer id,
+                          @Param("staffId") String staffId,
+                          @Param("name") String name,
+                          @Param("role") String role,
+                          @Param("status") String status);
 
 //    ステータス更新
     @Update("UPDATE users SET status = #{status} WHERE id = #{id}")

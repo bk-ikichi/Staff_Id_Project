@@ -23,13 +23,6 @@ public class UserService {
         return user;
     }
 
-    public void changeUserName(Integer id, String name){
-        if(name == null || name.trim().isEmpty()){
-            throw new RuntimeException("名前を入力してください。");
-        }
-        userRepository.updateUserName(id, name);
-    }
-
     public void changeUserStatus(Integer id,String status){
         userRepository.updateStatus(id,status);
     }
@@ -43,5 +36,25 @@ public class UserService {
             throw new RuntimeException("無効なロール名です");
         }
         userRepository.updateRole(id, role);
+    }
+    // 📄 UserService.java の一番下（クラスの閉じカッコ } の直前）に追記してください
+
+    public void updateUserFields(Integer id, String staffId, String name, String role, String status) {
+        // スタッフIDのバリデーションチェック
+        if (staffId == null || staffId.trim().isEmpty()) {
+            throw new RuntimeException("スタッフIDを入力してください。");
+        }
+
+        // 氏名のバリデーションチェック
+        if (name == null || name.trim().isEmpty()) {
+            throw new RuntimeException("名前を入力してください。");
+        }
+
+        // 大文字小文字の表記揺れを防ぐため、念のため大文字に揃えてリポジトリに渡す
+        String formattedRole = role != null ? role.toUpperCase() : "STAFF";
+        String formattedStatus = status != null ? status.toUpperCase() : "ACTIVE";
+
+        // リポジトリ層のメソッドを呼び出す
+        userRepository.updateUserFields(id, staffId, name, formattedRole, formattedStatus);
     }
 }

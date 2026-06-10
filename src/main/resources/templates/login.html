@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン | スタッフカードシステム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-brand-red: #D62300;
+            --color-brand-brown: #502314;
+            --color-brand-cream: #F5EBDC;
+            --color-brand-light: #FDF8F2;
+        }
+    </style>
+</head>
+<body class="bg-brand-cream min-h-screen flex flex-col justify-center items-center p-4">
+
+<div class="bg-brand-light w-full max-w-md p-8 rounded-2xl border-2 border-amber-200 shadow-xl">
+
+    <div class="text-center mb-8">
+        <h1 class="text-brand-brown text-3xl font-black tracking-wider mb-2">
+            STAFF CARD
+        </h1>
+        <p class="text-amber-800 text-sm font-bold">
+            スタッフ管理システム 🍔
+        </p>
+    </div>
+
+    <div th:if="${errorMessage}"
+         class="bg-red-50 border-2 border-brand-red text-brand-red text-sm font-bold p-4 rounded-xl mb-6">
+        <p th:text="${errorMessage}">ユーザーIDまたはパスワードが正しくありません</p>
+    </div>
+
+    <form th:action="@{/auth/login}" th:object="${loginRequest}" method="post" class="space-y-6">
+
+        <div>
+            <label for="staffId" class="block text-brand-brown font-black text-sm mb-2">
+                スタッフID
+            </label>
+            <input type="text"
+                   id="staffId"
+                   th:field="*{staffId}"
+                   placeholder="例: s001"
+                   required
+                   class="w-full p-4 rounded-xl border-2 border-amber-200 bg-white text-brand-brown font-bold focus:outline-none focus:border-brand-red transition-colors" />
+        </div>
+
+        <div>
+            <label for="password" class="block text-brand-brown font-black text-sm mb-2">
+                パスワード
+            </label>
+            <input type="password"
+                   id="password"
+                   th:field="*{password}"
+                   placeholder="••••••••"
+                   required
+                   class="w-full p-4 rounded-xl border-2 border-amber-200 bg-white text-brand-brown font-bold focus:outline-none focus:border-brand-red transition-colors" />
+        </div>
+
+        <button type="submit"
+                class="w-full bg-brand-red hover:bg-red-700 text-brand-light font-black text-lg p-4 rounded-full shadow-md hover:shadow-lg transition-all transform active:scale-95 cursor-pointer">
+            ログイン
+        </button>
+
+    </form>
+
+</div>
+
+<div class="mt-6 text-center text-xs text-amber-800 font-bold">
+    &copy; 2026 IKICHI Staff Card Project.
+</div>
+
+</body>
+</html>

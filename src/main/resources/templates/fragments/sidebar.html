@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<div th:fragment="sidebar"
+     class="fixed inset-y-0 left-0 w-64 bg-brand-light border-r-2 border-amber-200 p-6 flex flex-col justify-between z-50
+                transform -translate-x-full md:translate-x-0 transition-transform duration-350 ease-in-out">
+
+    <div>
+        <div class="mb-10 pb-4 border-b-2 border-amber-200">
+            <h2 class="text-xl font-black tracking-widest text-brand-red">STAFF CARD</h2>
+            <p class="text-xs font-black text-brand-brown tracking-wider uppercase">Management System</p>
+        </div>
+
+        <nav class="space-y-2">
+            <a th:href="@{/users}"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black text-brand-brown hover:bg-amber-100/70 transition-colors cursor-pointer">
+                <span>スタッフ管理</span>
+            </a>
+
+            <a th:href="@{/store}"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black text-brand-brown hover:bg-amber-100/70 transition-colors cursor-pointer">
+                <span>店舗管理</span>
+            </a>
+
+            <a th:href="@{/usage}"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black text-brand-brown hover:bg-amber-100/70 transition-colors cursor-pointer">
+                <span>利用ログ管理</span>
+            </a>
+        </nav>
+    </div>
+
+    <div class="pt-4 border-t-2 border-amber-200">
+        <a th:href="@{/auth/logout}"
+           class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black text-brand-brown hover:bg-amber-100/70 transition-colors cursor-pointer">
+            <span>ログアウト</span>
+        </a>
+    </div>
+
+</div>
+
+</body>
+</html>

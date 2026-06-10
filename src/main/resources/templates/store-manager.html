@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>店舗管理 | スタッフカードシステム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-brand-red: #D62300;
+            --color-brand-brown: #502314;
+            --color-brand-cream: #F5EBDC;
+            --color-brand-light: #FDF8F2;
+        }
+    </style>
+</head>
+<body class="bg-brand-cream min-h-screen text-brand-brown font-sans flex">
+
+<div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+<main class="flex-1 p-4 md:p-8 ml-0 md:ml-64 transition-all">
+
+    <div class="mb-8">
+        <h1 class="text-2xl md:text-3xl font-black tracking-wider">店舗管理</h1>
+        <p class="text-sm font-bold text-amber-800 mt-1">運営店舗の登録、および各店舗の情報管理を行います。</p>
+    </div>
+
+    <div th:if="${errorMessage}" class="bg-red-50 border-2 border-brand-red text-brand-red text-sm font-bold p-4 rounded-xl mb-6">
+        <p th:text="${errorMessage}">エラーが発生しました</p>
+    </div>
+
+    <div th:if="${successMessage}" class="bg-emerald-50 border-2 border-emerald-600 text-emerald-700 text-sm font-bold p-4 rounded-xl mb-6">
+        <p th:text="${successMessage}">処理が成功しました</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <div class="bg-brand-light p-6 rounded-2xl border-2 border-amber-200 shadow-md h-fit">
+            <h2 class="text-xl font-black mb-4 border-b-2 border-amber-200 pb-2">新規店舗登録</h2>
+
+            <form th:action="@{/store/register}" th:object="${newStore}" method="post" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-black mb-1">店舗コード (comId)</label>
+                    <input type="text" th:field="*{comId}" required placeholder="例: ST001"
+                           class="w-full p-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-black mb-1">店舗名 (comName)</label>
+                    <input type="text" th:field="*{comName}" required placeholder="例: 盛岡中央店"
+                           class="w-full p-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-black mb-1">所在地 (location)</label>
+                    <input type="text" th:field="*{location}" required placeholder="例: 岩手県盛岡市..."
+                           class="w-full p-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red" />
+                </div>
+
+                <button type="submit" class="w-full bg-brand-red hover:bg-red-700 hover:text-white text-brand-light font-black text-sm p-3 rounded-full shadow transition-all cursor-pointer mt-2">
+                    店舗を登録する
+                </button>
+            </form>
+        </div>
+
+        <div class="lg:col-span-2 bg-brand-light p-6 rounded-2xl border-2 border-amber-200 shadow-md overflow-x-auto">
+            <h2 class="text-xl font-black mb-4 border-b-2 border-amber-200 pb-2">店舗一覧</h2>
+
+            <table class="w-full text-left border-collapse min-w-[650px]">
+                <thead>
+                <tr class="border-b-2 border-amber-200 text-xs font-black uppercase text-amber-800">
+                    <th class="py-3 px-2">コード / 店舗名</th>
+                    <th class="py-3 px-2">所在地</th>
+                    <th class="py-3 px-2 text-center">スタッフ数</th>
+                    <th class="py-3 px-2">ステータス</th>
+                    <th class="py-3 px-2 text-center">操作アクション</th>
+                </tr>
+                </thead>
+                <tbody class="text-sm font-bold divide-y divide-amber-100 bg-white">
+                <tr th:each="store : ${stores}"
+                    th:data-id="${store.id}"
+                    th:data-comid="${store.comId}"
+                    th:data-comname="${store.comName}"
+                    th:data-location="${store.location}"
+                    class="store-row hover:bg-amber-50/50 transition-colors">
+
+                    <td class="py-4 px-2">
+                        <div class="text-xs text-amber-700 font-mono" th:text="${store.comId}">ST001</div>
+                        <div class="mt-0.5">
+                            <a th:href="@{/store/{id}/all(id=${store.id})}"
+                               class="text-brand-red hover:text-red-700 font-black hover:underline transition-all flex items-center gap-0.5 cursor-pointer">
+                                <span th:text="${store.comName}">盛岡店</span>
+                            </a>
+                        </div>
+                    </td>
+                    <td class="py-4 px-2 text-brand-brown text-xs max-w-[150px] truncate" th:text="${store.location}">岩手県...</td>
+                    <td class="py-4 px-3 text-center font-bold">
+                        <span class="bg-amber-100 text-amber-900 text-xs font-black px-2.5 py-1 rounded-full"
+                              th:text="|${store.users != null ? #lists.size(store.users) : 0} 名|">0 名</span>
+                    </td>
+                    <td class="py-4 px-2">
+                        <span class="px-2 py-1 rounded-full text-xs font-black"
+                              th:classappend="${store.active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-brand-red'}"
+                              th:text="${store.active ? '稼働中' : '停止中'}">稼働中</span>
+                    </td>
+                    <td class="py-4 px-2">
+                        <div class="flex items-center justify-center gap-2 w-full max-w-[220px] mx-auto">
+
+                            <button type="button" onclick="openStoreEditModal(this.closest('tr'))"
+                                    class="flex-1 text-center px-2.5 py-1.5 rounded-xl border-2 border-brand-brown bg-brand-light hover:bg-amber-100 text-brand-brown text-xs font-black shadow-sm transition-all cursor-pointer">
+                                編集
+                            </button>
+
+                            <form th:action="@{/store/{id}/active(id=${store.id})}" method="post" class="flex-1">
+                                <input type="hidden" name="isActive" th:value="${!store.active}" />
+                                <button type="submit" class="w-full text-center px-2.5 py-1.5 rounded-xl border-2 border-amber-300 bg-white hover:bg-amber-50 text-xs font-black shadow-sm transition-all cursor-pointer"
+                                        th:text="${store.active ? '停止する' : '稼働する'}">
+                                    状態切替
+                                </button>
+                            </form>
+
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(stores)}">
+                    <td colspan="5" class="py-8 text-center text-sm font-bold text-amber-700 bg-amber-50/20">
+                        登録されている店舗がまだいません。
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</main>
+
+<div id="storeEditModal" class="fixed inset-0 bg-slate-500/40 backdrop-blur-[1px] z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white p-6 rounded-2xl border-2 border-amber-200 shadow-xl w-full max-w-md mx-4">
+        <div class="flex items-center justify-between border-b-2 border-amber-200 pb-3 mb-4">
+            <h3 class="text-lg font-black text-brand-brown">店舗情報の編集</h3>
+            <button type="button" onclick="closeStoreEditModal()" class="text-stone-400 hover:text-stone-700 font-bold text-xl cursor-pointer">✕</button>
+        </div>
+
+        <form id="storeEditForm" method="post" action="">
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-black text-amber-900 mb-1">店舗コード (comId)</label>
+                    <input type="text" id="modalComId" name="comId" required
+                           class="w-full p-2.5 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-amber-900 mb-1">店舗名 (comName)</label>
+                    <input type="text" id="modalComName" name="comName" required
+                           class="w-full p-2.5 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red" />
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-amber-900 mb-1">所在地 (location)</label>
+                    <input type="text" id="modalLocation" name="location" required
+                           class="w-full p-2.5 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:border-brand-red" />
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 border-t border-amber-100 pt-4">
+                <button type="button" onclick="closeStoreEditModal()"
+                        class="px-4 py-2 rounded-xl border-2 border-stone-300 text-stone-600 text-xs font-black hover:bg-stone-100 cursor-pointer">
+                    キャンセル
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 rounded-xl bg-brand-red hover:bg-red-700 text-brand-light text-xs font-black shadow transition-all cursor-pointer">
+                    保存する
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const storeEditModal = document.getElementById('storeEditModal');
+    const storeEditForm = document.getElementById('storeEditForm');
+
+    function openStoreEditModal(row) {
+        // 行の data 属性から既存の店舗データを抽出
+        const id = row.getAttribute('data-id');
+        const comId = row.getAttribute('data-comid');
+        const comName = row.getAttribute('data-comname');
+        const location = row.getAttribute('data-location');
+
+        // モーダルの各入力欄に初期値をセット
+        document.getElementById('modalComId').value = comId;
+        document.getElementById('modalComName').value = comName;
+        document.getElementById('modalLocation').value = location;
+
+        // 送信先URLを動的に生成して適用
+        storeEditForm.action = `/store/${id}/edit`;
+
+        // フェードイン表示
+        storeEditModal.classList.remove('hidden');
+        setTimeout(() => {
+            storeEditModal.classList.remove('opacity-0');
+        }, 10);
+    }
+
+    function closeStoreEditModal() {
+        storeEditModal.classList.add('opacity-0');
+        setTimeout(() => {
+            storeEditModal.classList.add('hidden');
+        }, 300);
+    }
+
+    // 背景をクリックした時にも閉じるように設定
+    storeEditModal.addEventListener('click', (e) => {
+        if (e.target === storeEditModal) closeStoreEditModal();
+    });
+</script>
+</body>
+</html>
