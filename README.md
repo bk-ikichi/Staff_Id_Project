@@ -129,8 +129,7 @@ flowchart TD
     UsageLogs["利用ログ画面 (/usage)"]
     ChangePassword["パスワード変更画面 (/users/change-password)"]
 
-    Login -->|ログイン成功| StaffManager
-    Login -->|一般スタッフ| StaffCard
+    Login -->|ログイン成功| StaffCard
     StaffCard -->|パスワード変更| ChangePassword
     StaffManager -->|新規登録ボタン| StaffRegister
     StaffManager -->|店舗管理へ| StoreManager
@@ -166,16 +165,17 @@ flowchart TD
 ## 5. ビジネスロジックと仕様詳細
 
 ### 5.1 認証・セキュリティ仕様
-- **セッション認証 (`Spring Security`)**:
+- **ロールベース認可とアクセス制御 (`Spring Security`)**:
   - 設定クラス: [SecurityConfig.java](file:///C:/Users/KamataRyunosuke/Desktop/BugerKingProject/Ikichi_StaffCard_Project/src/main/java/org/example/ikichi_staffcard_project/auth/config/SecurityConfig.java)
-  - `/auth/login`, `/auth/logout`, `/error`, および静的リソース (`/css/**`, `/js/**`, `/images/**`) は未ログインでもアクセス可能。
-  - それ以外の全パス (`/users/**`, `/store/**`, `/usage/**`) へのアクセスはログインを必須とし、未認証アクセスは `/auth/login` に自動リダイレクト。
-  - CSRF対策は一時的に無効化され、重複ログインは最大1セッションに制限。
-- **ログイン処理 (`AuthController`)**:
-  - `POST /auth/login` にてバリデーション（空チェック）を実行。
-  - `AuthenticationService` が `AuthenticationManager` を使ってID/PWを照合（ハッシュ値は `BCryptPasswordEncoder` を使用）。
-  - 照合成功後、`SecurityContextHolder` に認証情報（スタッフID）を設定し、セッション (`HttpSession`) にバインドして認証状態を維持。
-  - セッションキー `"currentUser"` にログインレスポンスを保存。
+  - 未ログインでもアクセス可能なパス: `/auth/login`, `/auth/logout`, `/error`、および静的リソース (`/css/**`, `/js/**`, `/images/**`)。
+  - 一般スタッフ用デジタル社員証 (`/users/card`) およびクーポン利用のPOST処理 (`/usage/use-coupon`) は、ログイン済みの全ユーザーにアクセス許可。
+  - 管理者用機能 (`/users/**`, `/store/**`, `/usage/**` のうちクーポンPOST以外) へのアクセスは、ロールが `ADMIN` または `MANAGER` のユーザーのみに制限。
+  - `CustomUserDetails.java` の `getAuthorities()` にて、ユーザーのロール情報を `ROLE_` プレフィックス付きの `SimpleGrantedAuthority` に変換することで、Spring Security によるロールベースの認可判定を実現。
+  - CSRF対策は無効化、同一アカウントの重複ログインは最大1セッションに制限。
+- **ログイン・初期遷移処理 (`AuthController` & `HomeController`)**:
+  - [HomeController.java](file:///C:/Users/KamataRyunosuke/Desktop/BugerKingProject/Ikichi_StaffCard_Project/src/main/java/org/example/ikichi_staffcard_project/controller/HomeController.java) にて、デフォルトルート `/` へのアクセスを自動的に `/auth/login` へリダイレクト。
+  - `POST /auth/login` での認証成功後、ユーザーは一律でまずデジタル社員証画面（`/users/card`）へ遷移する仕様。
+  - 認証成功時は `SecurityContextHolder` に認証情報（スタッフIDと対応する権限）を設定し、セッション (`HttpSession`) にバインドして状態を維持。セッションキー `"currentUser"` にログイン情報を保存。
 - **JWTトークン生成モジュール**:
   - [JwtService.java](file:///C:/Users/KamataRyunosuke/Desktop/BugerKingProject/Ikichi_StaffCard_Project/src/main/java/org/example/ikichi_staffcard_project/auth/config/JwtService.java)
   - `generateToken(String staffId, String role)` をコールすると、`HS256` 署名されたJWTを発行。
@@ -230,6 +230,7 @@ flowchart TD
     - [JwtService.java](file:///C:/Users/KamataRyunosuke/Desktop/BugerKingProject/Ikichi_StaffCard_Project/src/main/java/org/example/ikichi_staffcard_project/auth/config/JwtService.java) : JWTトークン生成・検証ロジック
     - [AuthenticationService.java](file:///C:/Users/KamataRyunosuke/Desktop/BugerKingProject/Ikichi_StaffCard_Project/src/main/java/org/example/ikichi_staffcard_project/auth/config/AuthenticationService.java) : 認証処理およびパスワードハッシュ化
   - `controller/`
+    - [HomeController.java](file:///C:/Users/KamataRyunosuke/Desktop/BugerKingProject/Ikichi_StaffCard_Project/src/main/java/org/example/ikichi_staffcard_project/controller/HomeController.java) : デフォルトルート（`/`）からログイン画面へのリダイレクトコントローラ
     - [UserController.java](file:///C:/Users/KamataRyunosuke/Desktop/BugerKingProject/Ikichi_StaffCard_Project/src/main/java/org/example/ikichi_staffcard_project/controller/UserController.java) : スタッフ一覧・登録・編集・社員証画面コントローラ
     - [StoreController.java](file:///C:/Users/KamataRyunosuke/Desktop/BugerKingProject/Ikichi_StaffCard_Project/src/main/java/org/example/ikichi_staffcard_project/controller/StoreController.java) : 店舗一覧・登録・詳細画面コントローラ
     - [UsageLogController.java](file:///C:/Users/KamataRyunosuke/Desktop/BugerKingProject/Ikichi_StaffCard_Project/src/main/java/org/example/ikichi_staffcard_project/controller/UsageLogController.java) : 利用ログ一覧表示・クーポン使用処理コントローラ

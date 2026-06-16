@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>スタッフ一覧 | スタッフカードシステム</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind v4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style type="text/tailwindcss">
         @theme {
             --color-brand-red: #D62300;
@@ -18,7 +19,7 @@
 
 <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-<main class="flex-1 p-4 md:p-8 ml-0 md:ml-64 transition-all w-full">
+<main class="flex-1 p-4 md:p-8 pt-18 md:pt-8 ml-0 md:ml-64 transition-all w-full">
 
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

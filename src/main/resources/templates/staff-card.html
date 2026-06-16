@@ -11,6 +11,11 @@
 
 <div class="w-full max-w-md bg-white min-h-screen shadow-lg flex flex-col justify-between">
 
+    <!-- 画面上部ヘッダーバー -->
+    <div class="bg-white border-b border-gray-100 px-5 py-5 text-center sticky top-0 z-30">
+        <h1 class="text-xl font-black text-gray-800 tracking-wider">株式会社伊吉 スタッフカード</h1>
+    </div>
+
     <div class="p-5 flex-1">
 
         <div th:if="${errorMessage}" class="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm font-medium">
@@ -27,7 +32,7 @@
                 <h2 class="text-2xl font-bold tracking-wide" th:text="${user.name}">伊吉 太郎</h2>
                 <div class="pt-3 border-t border-white/20 flex items-center gap-2 text-sm">
                     <i data-lucide="map-pin" class="w-4 h-4"></i>
-                    <span>所属店舗ID: <strong th:text="${user.storeId}">1</strong></span>
+                    <span>所属店舗: <strong th:text="${user.store != null ? user.store.comName : '未所属'}">株式会社伊吉</strong></span>
                 </div>
             </div>
         </div>
@@ -45,26 +50,43 @@
             </div>
 
             <div class="space-y-3">
-                <div class="bg-white border-2 border-dashed border-gray-200 rounded-xl p-4 flex items-center justify-between transition-colors"
-                     th:classappend="${isStore1Used} ? 'opacity-60 bg-gray-50' : 'hover:border-indigo-300'">
+                <div th:each="store : ${activeStores}"
+                     class="bg-white border-2 border-dashed border-gray-200 rounded-xl p-4 flex items-center justify-between transition-colors hover:border-indigo-300"
+                     th:classappend="${couponUsageMap.get(store.id)} ? 'opacity-60 bg-gray-50' : ''">
                     <div>
-                        <h4 class="font-bold text-gray-800 text-base">株式会社伊吉 (クーポン)</h4>
+                        <h4 class="font-bold text-gray-800 text-base" th:text="${store.comName}">株式会社伊吉</h4>
                         <p class="text-xs text-red-500 font-semibold mt-1">社員割引 適用画面</p>
                     </div>
 
                     <form th:action="@{/usage/use-coupon}" method="post">
                         <input type="hidden" name="userId" th:value="${user.id}" />
-                        <input type="hidden" name="storeId" value="1" />
-                        <input type="hidden" name="storeName" value="株式会社伊吉" />
+                        <input type="hidden" name="storeId" th:value="${store.id}" />
+                        <input type="hidden" name="storeName" th:value="${store.comName}" />
                         <button type="submit"
-                                th:disabled="${isStore1Used}"
-                                th:text="${isStore1Used} ? '本日使用済み' : '使用する'"
-                                th:class="${isStore1Used} ? 'bg-gray-300 text-gray-500 text-xs font-bold px-4 py-2.5 rounded-lg cursor-not-allowed' : 'btn-coupon bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-xs transition-all active:scale-95'">
+                                th:disabled="${couponUsageMap.get(store.id)}"
+                                th:text="${couponUsageMap.get(store.id)} ? '本日使用済み' : '使用する'"
+                                th:class="${couponUsageMap.get(store.id)} ? 'bg-gray-300 text-gray-500 text-xs font-bold px-4 py-2.5 rounded-lg cursor-not-allowed' : 'btn-coupon bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-xs transition-all active:scale-95'">
                             使用する
                         </button>
                     </form>
                 </div>
             </div>
+        </div>
+
+        <!-- ADMIN, MANAGERまたはSTORE_MANAGER権限を持つユーザーのみに表示する管理者画面へのリンク -->
+        <div th:if="${user.role != null and (user.role.toUpperCase() == 'ADMIN' or user.role.toUpperCase() == 'MANAGER' or user.role.toUpperCase() == 'STORE_MANAGER')}" class="mt-4 px-5">
+            <a href="/users" class="block w-full text-center bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold py-3 rounded-xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                <span>管理者画面へ</span>
+            </a>
+        </div>
+
+        <!-- 全ロール共通：ログアウトボタン -->
+        <div class="mt-3 px-5 pb-2">
+            <a href="/auth/logout" class="block w-full text-center bg-stone-100 hover:bg-stone-200 text-brand-brown border-2 border-brand-brown text-xs font-bold py-3 rounded-xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                <span>ログアウト</span>
+            </a>
         </div>
 
     </div>
@@ -75,21 +97,39 @@
 </div>
 
 <div id="coupon-popup" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl border border-gray-100 animate-scale-in">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl border border-gray-100 animate-scale-in relative">
+        <!-- 閉じる(✕)ボタン -->
+        <button id="popup-close-x" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-full hover:bg-gray-100" aria-label="閉じる">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+
         <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
             <i data-lucide="check-circle-2" class="w-10 h-10"></i>
         </div>
         <h3 class="text-xl font-bold text-gray-800 mb-1" id="popup-store-name" th:text="${targetStoreName}">店舗名</h3>
         <p class="text-xs text-gray-400 mb-4">こちらの画面をスタッフに提示してください</p>
 
-        <div class="bg-gray-900 text-green-400 font-mono text-4xl font-bold py-4 px-6 rounded-xl tracking-widest shadow-inner mb-5" id="popup-timer">
+        <div class="bg-gray-900 text-green-400 font-mono text-4xl font-bold py-4 px-6 rounded-xl tracking-widest shadow-inner mb-4" id="popup-timer">
             05:00
         </div>
 
-        <p class="text-xs text-amber-600 font-medium bg-amber-50 py-2 px-3 rounded-lg border border-amber-200/60">
-            警告: 5分経つと本日分は自動的に使用不可になります
+        <p class="text-xs text-amber-600 font-medium bg-amber-50 py-2 px-3 rounded-lg border border-amber-200/60 mb-5">
+            警告: 5分経つと自動的に無効化され使用済みになります
         </p>
+
+        <!-- 閉じる（下部）ボタン -->
+        <button id="popup-close-btn" class="w-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5">
+            <i data-lucide="minimize-2" class="w-4 h-4"></i>
+            <span>閉じて他の画面を操作する</span>
+        </button>
     </div>
+</div>
+
+<!-- フローティングミニタイマーバッジ -->
+<div id="coupon-badge" class="hidden fixed bottom-6 right-6 z-40 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full py-2.5 px-4 shadow-lg flex items-center gap-2 cursor-pointer transition-all active:scale-95 border border-white/20 select-none animate-bounce">
+    <i data-lucide="ticket" class="w-4 h-4"></i>
+    <span id="badge-store-name" class="text-xs font-bold truncate max-w-[100px]">店舗名</span>
+    <span id="badge-timer" class="font-mono font-bold text-xs bg-black/20 px-2 py-0.5 rounded-md">05:00</span>
 </div>
 
 <script th:inline="javascript">
@@ -97,6 +137,7 @@
     const showTimerFlag = /*[[${showTimer}]]*/ false;
     const serverExpireTime = /*[[${expireTime}]]*/ 0;
     const targetStoreId = /*[[${targetStoreId}]]*/ 0;
+    const targetStoreName = /*[[${targetStoreName}]]*/ '';
     /*]]>*/
 </script>
 
@@ -115,10 +156,19 @@
     // 2. カウントダウンタイマー
     let countdownInterval;
 
-    function startCountdown(expireTime) {
+    function startCountdown(expireTime, storeName) {
         const popup = document.getElementById('coupon-popup');
+        const badge = document.getElementById('coupon-badge');
         const timerDisplay = document.getElementById('popup-timer');
+        const badgeTimerDisplay = document.getElementById('badge-timer');
+        const popupStoreName = document.getElementById('popup-store-name');
+        const badgeStoreName = document.getElementById('badge-store-name');
+
+        if (popupStoreName && storeName) popupStoreName.textContent = storeName;
+        if (badgeStoreName && storeName) badgeStoreName.textContent = storeName;
+
         popup.classList.remove('hidden');
+        badge.classList.add('hidden');
 
         clearInterval(countdownInterval);
         countdownInterval = setInterval(() => {
@@ -127,13 +177,17 @@
             if (diff <= 0) {
                 clearInterval(countdownInterval);
                 popup.classList.add('hidden');
-                localStorage.removeItem(`coupon_expire_${targetStoreId}`);
-                // タイマー終了後、画面状態を更新するため社員証の初期URLへリダイレクト
+                badge.classList.add('hidden');
+                localStorage.removeItem('coupon_expire_time');
+                localStorage.removeItem('coupon_store_id');
+                localStorage.removeItem('coupon_store_name');
                 window.location.href = "/users/card";
             } else {
                 const m = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
                 const s = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
-                timerDisplay.textContent = `${m}:${s}`;
+                const timeString = `${m}:${s}`;
+                if (timerDisplay) timerDisplay.textContent = timeString;
+                if (badgeTimerDisplay) badgeTimerDisplay.textContent = timeString;
             }
         }, 1000);
     }
@@ -144,17 +198,48 @@
         updateClock();
         setInterval(updateClock, 1000);
 
+        // イベントリスナーの設定
+        const closeXBtn = document.getElementById('popup-close-x');
+        if (closeXBtn) {
+            closeXBtn.addEventListener('click', () => {
+                document.getElementById('coupon-popup').classList.add('hidden');
+                document.getElementById('coupon-badge').classList.remove('hidden');
+            });
+        }
+
+        const closeBtn = document.getElementById('popup-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                document.getElementById('coupon-popup').classList.add('hidden');
+                document.getElementById('coupon-badge').classList.remove('hidden');
+            });
+        }
+
+        const badge = document.getElementById('coupon-badge');
+        if (badge) {
+            badge.addEventListener('click', () => {
+                document.getElementById('coupon-popup').classList.remove('hidden');
+                badge.classList.add('hidden');
+            });
+        }
+
         // クーポン利用直後の場合
-        if (showTimerFlag && serverExpireTime > 0) {
-            localStorage.setItem(`coupon_expire_${targetStoreId}`, serverExpireTime);
-            startCountdown(serverExpireTime);
+        if (showTimerFlag && serverExpireTime > 0 && targetStoreName) {
+            localStorage.setItem('coupon_expire_time', serverExpireTime);
+            localStorage.setItem('coupon_store_id', targetStoreId);
+            localStorage.setItem('coupon_store_name', targetStoreName);
+            startCountdown(serverExpireTime, targetStoreName);
         } else {
             // 通常アクセス時、有効時間内のタイマーデータが残っていれば復元
-            const storedExpire = localStorage.getItem('coupon_expire_1');
-            if (storedExpire && parseInt(storedExpire) > new Date().getTime()) {
-                startCountdown(parseInt(storedExpire));
-            } else if (storedExpire) {
-                localStorage.removeItem('coupon_expire_1');
+            const storedExpire = localStorage.getItem('coupon_expire_time');
+            const storedStoreName = localStorage.getItem('coupon_store_name');
+            if (storedExpire && parseInt(storedExpire) > new Date().getTime() && storedStoreName) {
+                // 復元された場合は最初はポップアップを表示
+                startCountdown(parseInt(storedExpire), storedStoreName);
+            } else {
+                localStorage.removeItem('coupon_expire_time');
+                localStorage.removeItem('coupon_store_id');
+                localStorage.removeItem('coupon_store_name');
             }
         }
     };

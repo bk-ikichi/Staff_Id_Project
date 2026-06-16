@@ -139,37 +139,40 @@ public class UserController {
      * アクセスURL: http://localhost:8080/users/card
      */
     @GetMapping("/card")
-    public String showStaffCard(HttpSession session, Model model) {
+    public String showStaffCard(@AuthenticationPrincipal UserDetails userDetails, HttpSession session, Model model) {
         // 💡 独自セッションからログイン中のユーザー情報を取得
         org.example.ikichi_staffcard_project.dto.LoginResponse currentUserSession =
                 (org.example.ikichi_staffcard_project.dto.LoginResponse) session.getAttribute("currentUser");
 
         // セッションがなければログイン画面へリダイレクト
-        if (currentUserSession == null) {
+        if (currentUserSession == null || userDetails == null) {
             return "redirect:/auth/login";
         }
 
-        // ログイン中のアカウント情報から token（または必要な識別子）を使って
-        // 既存のfindAllから現在ログイン中のスタッフを特定
-        // ※ もし LoginResponse に token 以外の値（staffIdなど）が残っている場合は、
-        //   currentUserSession.getStaffId() 等に置き換えてください。
-        //   ここでは、ログイン画面側で設定されている識別子をもとに特定します。
+        // ログイン中のアカウント情報（スタッフID）からユーザー情報を特定
+        String currentStaffId = userDetails.getUsername();
 
-        // 💡 今回はテストや安全性を考慮し、ログイン情報に紐づくスタッフ情報を一件特定します
-        // （もし LoginResponse に staffId を詰めるようにAuth側を修正済みの場合はそのまま動きます）
         List<User> allUsers = userService.findAll();
         User currentUser = allUsers.stream()
-                .filter(u -> u.getStaffId() != null) // 安全のためのフィルター
-                .findFirst() // 一時的に最初のユーザー（またはセッションの特定条件）を割り当て
+                .filter(u -> u.getStaffId() != null && u.getStaffId().equals(currentStaffId))
+                .findFirst()
                 .orElseThrow(() -> new RuntimeException("スタッフ情報が見つかりません。"));
-
-        // もしセッション内にすでにスタッフIDやトークンが正しく保持されている場合は、
-        // 特定の条件（例：u.getStaffId().equals(xxxxx)）で絞り込んでください。
 
         model.addAttribute("user", currentUser);
 
-        // クーポンが今日すでに使用済みか判定（店舗ID: 1 の場合）
-        model.addAttribute("isStore1Used", usageLogService.isCouponUsedToday(currentUser.getId(), 1));
+        // 💡 ACTIVEな店舗一覧を取得してモデルにセット
+        List<org.example.ikichi_staffcard_project.dto.Store> activeStores = storeService.findAll().stream()
+                .filter(org.example.ikichi_staffcard_project.dto.Store::isActive)
+                .toList();
+        model.addAttribute("activeStores", activeStores);
+
+        // 💡 各店舗ごとに本日クーポン使用済みかの判定マップを作成してモデルにセット
+        java.util.Map<Integer, Boolean> couponUsageMap = new java.util.HashMap<>();
+        for (org.example.ikichi_staffcard_project.dto.Store store : activeStores) {
+            boolean used = usageLogService.isCouponUsedToday(currentUser.getId(), store.getId());
+            couponUsageMap.put(store.getId(), used);
+        }
+        model.addAttribute("couponUsageMap", couponUsageMap);
 
         return "staff-card";
     }

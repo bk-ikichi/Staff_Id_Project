@@ -41,7 +41,7 @@ public class UsageLogController {
                                    @RequestParam("storeId") Integer storeId,
                                    @RequestParam("storeName") String storeName,
                                    HttpSession session,
-                                   Model model) {
+                                   org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
         LoginResponse currentUser = (LoginResponse) session.getAttribute("currentUser");
 
         if (currentUser == null) {
@@ -54,22 +54,16 @@ public class UsageLogController {
 
             long expireTime = System.currentTimeMillis() + (5 * 60 * 1000);
 
-            // 社員証画面のThymeleafでエラーが出ないよう、最低限必要な情報（ユーザー自身）を再構築して渡す
-            // 本来はUserControllerのGET側でセットされているuserオブジェクトをそのままダミーとして再利用
-            org.example.ikichi_staffcard_project.dto.User dummyUser = new org.example.ikichi_staffcard_project.dto.User();
-            dummyUser.setId(userId);
-            model.addAttribute("user", dummyUser);
+            // フラッシュ属性を使ってリダイレクト先にパラメータを渡す
+            redirectAttributes.addFlashAttribute("showTimer", true);
+            redirectAttributes.addFlashAttribute("targetStoreId", storeId);
+            redirectAttributes.addFlashAttribute("targetStoreName", storeName);
+            redirectAttributes.addFlashAttribute("expireTime", expireTime);
 
-            model.addAttribute("isStore1Used", true);
-            model.addAttribute("showTimer", true);
-            model.addAttribute("targetStoreId", storeId);
-            model.addAttribute("targetStoreName", storeName);
-            model.addAttribute("expireTime", expireTime);
-
-            return "staff-card";
+            return "redirect:/users/card";
 
         } catch (RuntimeException e) {
-            model.addAttribute("errorMessage", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/users/card";
         }
     }

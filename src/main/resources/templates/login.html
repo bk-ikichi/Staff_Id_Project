@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ログイン | スタッフカードシステム</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind v4 のブラウザ用CDNを使用し、カスタムカラーテーマを有効化 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style type="text/tailwindcss">
         @theme {
             --color-brand-red: #D62300;
@@ -14,9 +15,9 @@
         }
     </style>
 </head>
-<body class="bg-brand-cream min-h-screen flex flex-col justify-center items-center p-4">
+<body class="bg-brand-cream min-h-screen flex flex-col justify-center items-center p-4 sm:p-6">
 
-<div class="bg-brand-light w-full max-w-md p-8 rounded-2xl border-2 border-amber-200 shadow-xl">
+<div class="bg-brand-light w-full max-w-md p-6 sm:p-8 rounded-2xl border-2 border-amber-200 shadow-xl">
 
     <div class="text-center mb-8">
         <h1 class="text-brand-brown text-3xl font-black tracking-wider mb-2">
@@ -43,7 +44,7 @@
                    th:field="*{staffId}"
                    placeholder="例: s001"
                    required
-                   class="w-full p-4 rounded-xl border-2 border-amber-200 bg-white text-brand-brown font-bold focus:outline-none focus:border-brand-red transition-colors" />
+                   class="w-full p-4 rounded-xl border-2 border-amber-200 bg-white text-brand-brown font-bold text-base focus:outline-none focus:border-brand-red transition-colors" />
         </div>
 
         <div>
@@ -55,7 +56,7 @@
                    th:field="*{password}"
                    placeholder="••••••••"
                    required
-                   class="w-full p-4 rounded-xl border-2 border-amber-200 bg-white text-brand-brown font-bold focus:outline-none focus:border-brand-red transition-colors" />
+                   class="w-full p-4 rounded-xl border-2 border-amber-200 bg-white text-brand-brown font-bold text-base focus:outline-none focus:border-brand-red transition-colors" />
         </div>
 
         <button type="submit"
