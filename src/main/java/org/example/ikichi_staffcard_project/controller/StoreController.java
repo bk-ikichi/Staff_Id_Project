@@ -31,7 +31,7 @@ public class StoreController {
         return "store-manager";
     }
 
-    // 店の追加（💡 HTML側のパスに合わせて /register を追加）
+    // 店の追加（HTML側のパスに合わせて /register を追加）
     @PostMapping("/register")
     public String insert(@ModelAttribute("newStore") Store store) {
         storeService.insert(store);

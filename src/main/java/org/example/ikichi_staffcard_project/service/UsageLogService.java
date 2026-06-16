@@ -5,6 +5,7 @@ import org.example.ikichi_staffcard_project.dto.UsageResponse;
 import org.example.ikichi_staffcard_project.repository.UsageLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -12,21 +13,30 @@ import java.util.List;
 public class UsageLogService {
 
     private final UsageLogRepository usageLogRepository;
+
     @Autowired
     public UsageLogService(UsageLogRepository usageLogRepository) {
         this.usageLogRepository = usageLogRepository;
     }
 
-    public UsageLog processCouponUsage(Integer userId, Integer storeId) {
-        // 1. 本日の利用回数をチェック
-        int usageCount = usageLogRepository.getTodayUsageCount(userId);
+    /**
+     * 指定した店舗のクーポンが今日使用済みかチェックする
+     */
+    public boolean isCouponUsedToday(Integer userId, Integer storeId) {
+        return usageLogRepository.getTodayUsageCountByStore(userId, storeId) > 0;
+    }
 
-        // 2. すでに利用済み（1回以上）ならエラーを投げる
-        if (usageCount >= 1) {
-            throw new RuntimeException("本日は既に使用済みです。クーポンは1日1回まで利用可能です。");
+    /**
+     * クーポン利用を処理し、ログを保存する
+     */
+    @Transactional
+    public UsageLog processCouponUsage(Integer userId, Integer storeId) {
+        // 1. 対象店舗の本日利用回数をチェック
+        if (isCouponUsedToday(userId, storeId)) {
+            throw new RuntimeException("本日は既に使用済みです。この店舗のクーポンは1日1回まで利用可能です。");
         }
 
-        // 3. 利用ログの作成と保存
+        // 2. 利用ログの作成と保存
         UsageLog log = new UsageLog();
         log.setUserId(userId);
         log.setUsedAtStoreId(storeId);

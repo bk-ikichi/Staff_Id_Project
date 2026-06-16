@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>デジタル社員証</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen flex justify-center">
+
+<div class="w-full max-w-md bg-white min-h-screen shadow-lg flex flex-col justify-between">
+
+    <div class="p-5 flex-1">
+
+        <div th:if="${errorMessage}" class="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm font-medium">
+            <p th:text="${errorMessage}"></p>
+        </div>
+
+        <div class="bg-linear-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 text-white shadow-md mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs bg-white/20 px-3 py-1 rounded-full font-medium tracking-wider">OFFICIAL STAFF</span>
+                <i data-lucide="qr-code" class="w-6 h-6 opacity-80"></i>
+            </div>
+            <div class="space-y-1">
+                <p class="text-xs opacity-75 font-mono">STAFF ID: <span th:text="${user.staffId}" class="font-bold">m1001</span></p>
+                <h2 class="text-2xl font-bold tracking-wide" th:text="${user.name}">伊吉 太郎</h2>
+                <div class="pt-3 border-t border-white/20 flex items-center gap-2 text-sm">
+                    <i data-lucide="map-pin" class="w-4 h-4"></i>
+                    <span>所属店舗ID: <strong th:text="${user.storeId}">1</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center bg-gray-50 rounded-xl p-4 border border-gray-200/60 shadow-xs mb-8">
+            <h1 class="text-sm font-bold text-gray-500 tracking-widest uppercase mb-1">社員証</h1>
+            <div id="live-clock" class="text-3xl font-mono font-bold text-gray-800 tracking-wider">00:00:00</div>
+            <div id="live-date" class="text-xs text-gray-400 mt-1">2026.06.16 (TUE)</div>
+        </div>
+
+        <div>
+            <div class="flex items-center gap-2 mb-4">
+                <i data-lucide="ticket" class="w-5 h-5 text-indigo-600"></i>
+                <h3 class="text-lg font-bold text-gray-800">社員割引クーポン</h3>
+            </div>
+
+            <div class="space-y-3">
+                <div class="bg-white border-2 border-dashed border-gray-200 rounded-xl p-4 flex items-center justify-between transition-colors"
+                     th:classappend="${isStore1Used} ? 'opacity-60 bg-gray-50' : 'hover:border-indigo-300'">
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-base">株式会社伊吉 (クーポン)</h4>
+                        <p class="text-xs text-red-500 font-semibold mt-1">社員割引 適用画面</p>
+                    </div>
+
+                    <form th:action="@{/usage/use-coupon}" method="post">
+                        <input type="hidden" name="userId" th:value="${user.id}" />
+                        <input type="hidden" name="storeId" value="1" />
+                        <input type="hidden" name="storeName" value="株式会社伊吉" />
+                        <button type="submit"
+                                th:disabled="${isStore1Used}"
+                                th:text="${isStore1Used} ? '本日使用済み' : '使用する'"
+                                th:class="${isStore1Used} ? 'bg-gray-300 text-gray-500 text-xs font-bold px-4 py-2.5 rounded-lg cursor-not-allowed' : 'btn-coupon bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-xs transition-all active:scale-95'">
+                            使用する
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="bg-gray-50 border-t border-gray-100 p-4 text-center text-xs text-gray-400 font-medium">
+        &copy; 2026 IKICHI PROJECT All Rights Reserved.
+    </div>
+</div>
+
+<div id="coupon-popup" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl border border-gray-100 animate-scale-in">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
+            <i data-lucide="check-circle-2" class="w-10 h-10"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-1" id="popup-store-name" th:text="${targetStoreName}">店舗名</h3>
+        <p class="text-xs text-gray-400 mb-4">こちらの画面をスタッフに提示してください</p>
+
+        <div class="bg-gray-900 text-green-400 font-mono text-4xl font-bold py-4 px-6 rounded-xl tracking-widest shadow-inner mb-5" id="popup-timer">
+            05:00
+        </div>
+
+        <p class="text-xs text-amber-600 font-medium bg-amber-50 py-2 px-3 rounded-lg border border-amber-200/60">
+            警告: 5分経つと本日分は自動的に使用不可になります
+        </p>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const showTimerFlag = /*[[${showTimer}]]*/ false;
+    const serverExpireTime = /*[[${expireTime}]]*/ 0;
+    const targetStoreId = /*[[${targetStoreId}]]*/ 0;
+    /*]]>*/
+</script>
+
+<script>
+    // 1. リアルタイム時計
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('live-clock').textContent =
+            `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+        const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+        document.getElementById('live-date').textContent =
+            `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${days[now.getDay()]})`;
+    }
+
+    // 2. カウントダウンタイマー
+    let countdownInterval;
+
+    function startCountdown(expireTime) {
+        const popup = document.getElementById('coupon-popup');
+        const timerDisplay = document.getElementById('popup-timer');
+        popup.classList.remove('hidden');
+
+        clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+            const diff = expireTime - new Date().getTime();
+
+            if (diff <= 0) {
+                clearInterval(countdownInterval);
+                popup.classList.add('hidden');
+                localStorage.removeItem(`coupon_expire_${targetStoreId}`);
+                // タイマー終了後、画面状態を更新するため社員証の初期URLへリダイレクト
+                window.location.href = "/users/card";
+            } else {
+                const m = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+                const s = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
+                timerDisplay.textContent = `${m}:${s}`;
+            }
+        }, 1000);
+    }
+
+    // 初期化処理
+    window.onload = () => {
+        lucide.createIcons();
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // クーポン利用直後の場合
+        if (showTimerFlag && serverExpireTime > 0) {
+            localStorage.setItem(`coupon_expire_${targetStoreId}`, serverExpireTime);
+            startCountdown(serverExpireTime);
+        } else {
+            // 通常アクセス時、有効時間内のタイマーデータが残っていれば復元
+            const storedExpire = localStorage.getItem('coupon_expire_1');
+            if (storedExpire && parseInt(storedExpire) > new Date().getTime()) {
+                startCountdown(parseInt(storedExpire));
+            } else if (storedExpire) {
+                localStorage.removeItem('coupon_expire_1');
+            }
+        }
+    };
+</script>
+</body>
+</html>

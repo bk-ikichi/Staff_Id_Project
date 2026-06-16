@@ -1,9 +1,6 @@
 package org.example.ikichi_staffcard_project.mapper;
 
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 import org.example.ikichi_staffcard_project.dto.UsageLog;
 import org.example.ikichi_staffcard_project.dto.UsageResponse;
 import org.example.ikichi_staffcard_project.dto.User;
@@ -32,4 +29,11 @@ public interface UsageLogMapper {
             "AND used_at >= CURRENT_DATE " +
             "AND used_at < CURRENT_DATE + 1")
     int countTodayUsage(Integer userId);
+
+    @Select("SELECT COUNT(*) FROM usage_logs " +
+            "WHERE user_id = #{userId} " +
+            "AND used_at_store_id = #{storeId} " +
+            "AND used_at >= CURRENT_DATE " +
+            "AND used_at < CURRENT_DATE + 1")
+    int countTodayUsageByStore(@Param("userId") Integer userId, @Param("storeId") Integer storeId);
 }
