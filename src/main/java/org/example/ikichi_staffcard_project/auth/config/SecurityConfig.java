@@ -52,11 +52,16 @@ public class SecurityConfig {
 
                 // 認可設定
                 .authorizeHttpRequests(auth -> auth
-                        // ログイン画面、ログアウト処理、エラー画面は認証なしでアクセス可能
-                        .requestMatchers("/auth/login", "/auth/logout", "/error").permitAll()
+                        // ログイン画面、ログアウト処理、エラー画面、およびルートURLは認証なしでアクセス可能
+                        .requestMatchers("/", "/auth/login", "/auth/logout", "/error").permitAll()
                         // 静的ファイル（CSS/JS/画像等）を追加した際のための解放設定
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
-                        // それ以外の全ての画面（/users, /store, /usage）はログイン必須
+                        // 一般スタッフ用デジタル社員証、およびクーポン利用のPOSTはログインしていれば全ロールに許可
+                        .requestMatchers("/users/card").authenticated()
+                        .requestMatchers("/usage/use-coupon").authenticated()
+                        // スタッフ管理、店舗管理、利用ログ一覧などの管理者用画面はADMIN、MANAGER、またはSTORE_MANAGERのみ許可
+                        .requestMatchers("/users/**", "/store/**", "/usage/**").hasAnyRole("ADMIN", "MANAGER", "STORE_MANAGER")
+                        // それ以外の全ての画面はログイン必須
                         .anyRequest().authenticated()
                 )
 

@@ -13,6 +13,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+
 import java.util.Collections;
 import java.util.logging.Logger;
 
@@ -26,10 +29,12 @@ public class AuthController {
     private static final Logger logger = Logger.getLogger(AuthController.class.getName());
 
     private final AuthenticationService authenticationService;
+    private final UserDetailsService userDetailsService;
 
     @Autowired
-    public AuthController(AuthenticationService authenticationService) {
+    public AuthController(AuthenticationService authenticationService, UserDetailsService userDetailsService) {
         this.authenticationService = authenticationService;
+        this.userDetailsService = userDetailsService;
     }
 
     /**
@@ -65,11 +70,13 @@ public class AuthController {
 
             logger.info("Successful login for staffId: " + loginRequest.getStaffId());
 
-            // 💡 loginResponseからではなく、入力された loginRequest からスタッフIDを取得するように変更します
+            // 💡 認証済みユーザーのロール情報をUserDetailsから正しく引き出して設定します
+            UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getStaffId());
+            // @AuthenticationPrincipal でコントローラ側が UserDetails 型として受け取れるよう、principalにオブジェクトそのものを渡します
             Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    loginRequest.getStaffId(), // ★ここを loginRequest.getStaffId() に修正
+                    userDetails,
                     null,
-                    Collections.emptyList()
+                    userDetails.getAuthorities()
             );
 
             // セキュリティ管理領域（Context）に証拠をセット
@@ -81,8 +88,8 @@ public class AuthController {
             // 既存のアプリケーション用セッションオブジェクトも保存
             session.setAttribute("currentUser", loginResponse);
 
-            // ログイン成功時はスタッフ一覧画面（/users）へ遷移
-            return "redirect:/users";
+            // ログイン成功時はデジタル社員証画面（/users/card）へ遷移
+            return "redirect:/users/card";
 
         } catch (BadRequestException ex) {
             logger.warning("Bad request: " + ex.getMessage());
