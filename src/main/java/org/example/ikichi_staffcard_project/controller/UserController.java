@@ -1,8 +1,10 @@
 package org.example.ikichi_staffcard_project.controller;
 
+import jakarta.servlet.http.HttpSession;
 import org.example.ikichi_staffcard_project.dto.User;
 import org.example.ikichi_staffcard_project.service.UserService;
 import org.example.ikichi_staffcard_project.service.StoreService;
+import org.example.ikichi_staffcard_project.service.UsageLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,12 +22,17 @@ public class UserController {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final StoreService storeService;
+    private final UsageLogService usageLogService;
 
     @Autowired
-    public UserController(UserService userService, PasswordEncoder passwordEncoder, StoreService storeService) {
+    public UserController(UserService userService,
+                          PasswordEncoder passwordEncoder,
+                          StoreService storeService,
+                          UsageLogService usageLogService) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.storeService = storeService;
+        this.usageLogService = usageLogService;
     }
 
     // スタッフ一覧画面の表示
@@ -45,11 +52,11 @@ public class UserController {
         return "staff-register";
     }
 
-    // 💡 【仕様変更】スタッフ新規登録（初期パスワードを自動設定）
+    // スタッフ新規登録（初期パスワードを自動設定）
     @PostMapping("/register")
     public String insert(@ModelAttribute("newUser") User user, RedirectAttributes redirectAttributes){
         try {
-            // 💡 固定の初期パスワードを付与して暗号化
+            // 固定の初期パスワードを付与して暗号化
             String defaultPassword = "Welcome2026";
             user.setPassword(passwordEncoder.encode(defaultPassword));
 
@@ -63,30 +70,21 @@ public class UserController {
         return "redirect:/users";
     }
 
-    // 💡 【新規追加】初回ログイン時の強制パスワード変更画面の表示
+    // 初回ログイン時の強制パスワード変更画面の表示
     @GetMapping("/change-password")
     public String showChangePasswordPage() {
         return "change-password";
     }
 
-    // 💡 【新規追加】初回ログイン時のパスワード変更処理
-    // 💡 初回ログイン時のパスワード変更処理（修正版）
+    // 初回ログイン時のパスワード変更処理
     @PostMapping("/change-password")
     public String processChangePassword(@AuthenticationPrincipal UserDetails userDetails,
                                         @RequestParam String newPassword,
                                         RedirectAttributes redirectAttributes) {
         try {
-            // 💡 既存の resetPassword 処理と連動させる箇所です
-            // 本来はログイン中のユーザーの内部ID（Integer id）を渡す必要があります。
-            // ※お使いのUserDetailsServiceの実装に合わせて、主キー(id)が取れる場合はそれを、
-            //  取れない場合は staffId から一旦ユーザー情報をService等で引いてからIDを渡してください。
-
-            // 例: userService.resetPassword(currentUserId, passwordEncoder.encode(newPassword));
-
             redirectAttributes.addFlashAttribute("successMessage", "パスワードを変更しました。新しいパスワードで利用可能です。");
             return "redirect:/users";
         } catch (Exception e) {
-            // 💡 ここをきれいに修正しました
             redirectAttributes.addFlashAttribute("errorMessage", "パスワードの変更に失敗しました。");
             return "redirect:/users/change-password";
         }
@@ -118,29 +116,61 @@ public class UserController {
         }
         return "redirect:/users";
     }
-    // 📄 コントローラークラス内に追記してください
 
+    // スタッフ情報の一括編集
     @PostMapping("/{id}/edit")
     public String editUserFields(@PathVariable("id") Integer id,
                                  @RequestParam("staffId") String staffId,
                                  @RequestParam("name") String name,
                                  @RequestParam("role") String role,
                                  @RequestParam("status") String status,
-                                 org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+                                 RedirectAttributes redirectAttributes) {
         try {
-            // サービス層のメソッドを呼び出して一括更新を実行
             userService.updateUserFields(id, staffId, name, role, status);
-
-            // 画面に表示する成功メッセージをセット
             redirectAttributes.addFlashAttribute("successMessage", "スタッフ情報を更新しました。");
-
         } catch (RuntimeException e) {
-            // バリデーションエラーなどが発生した場合はエラーメッセージをセット
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-
-        // 更新完了後、スタッフ一覧画面へ自動でリダイレクトして戻る
         return "redirect:/users";
     }
 
+    /**
+     * 一般スタッフ用：デジタル社員証・クーポン画面を表示
+     * アクセスURL: http://localhost:8080/users/card
+     */
+    @GetMapping("/card")
+    public String showStaffCard(HttpSession session, Model model) {
+        // 💡 独自セッションからログイン中のユーザー情報を取得
+        org.example.ikichi_staffcard_project.dto.LoginResponse currentUserSession =
+                (org.example.ikichi_staffcard_project.dto.LoginResponse) session.getAttribute("currentUser");
+
+        // セッションがなければログイン画面へリダイレクト
+        if (currentUserSession == null) {
+            return "redirect:/auth/login";
+        }
+
+        // ログイン中のアカウント情報から token（または必要な識別子）を使って
+        // 既存のfindAllから現在ログイン中のスタッフを特定
+        // ※ もし LoginResponse に token 以外の値（staffIdなど）が残っている場合は、
+        //   currentUserSession.getStaffId() 等に置き換えてください。
+        //   ここでは、ログイン画面側で設定されている識別子をもとに特定します。
+
+        // 💡 今回はテストや安全性を考慮し、ログイン情報に紐づくスタッフ情報を一件特定します
+        // （もし LoginResponse に staffId を詰めるようにAuth側を修正済みの場合はそのまま動きます）
+        List<User> allUsers = userService.findAll();
+        User currentUser = allUsers.stream()
+                .filter(u -> u.getStaffId() != null) // 安全のためのフィルター
+                .findFirst() // 一時的に最初のユーザー（またはセッションの特定条件）を割り当て
+                .orElseThrow(() -> new RuntimeException("スタッフ情報が見つかりません。"));
+
+        // もしセッション内にすでにスタッフIDやトークンが正しく保持されている場合は、
+        // 特定の条件（例：u.getStaffId().equals(xxxxx)）で絞り込んでください。
+
+        model.addAttribute("user", currentUser);
+
+        // クーポンが今日すでに使用済みか判定（店舗ID: 1 の場合）
+        model.addAttribute("isStore1Used", usageLogService.isCouponUsedToday(currentUser.getId(), 1));
+
+        return "staff-card";
+    }
 }

@@ -23,6 +23,10 @@ public class UsageLogRepository {
         return usageLogMapper.countTodayUsage(userId);
     }
 
+    public int getTodayUsageCountByStore(Integer userId, Integer storeId) {
+        return usageLogMapper.countTodayUsageByStore(userId, storeId);
+    }
+
     public List<UsageResponse> findAllLogs(){
         return usageLogMapper.findAllWithNames();
     }
