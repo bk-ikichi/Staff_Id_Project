@@ -4,7 +4,7 @@ CREATE TABLE stores (
                         com_id VARCHAR(20) UNIQUE NOT NULL,
                         com_name VARCHAR(100) NOT NULL,
                         location VARCHAR(255),
-                        is_active VARCHAR(255)
+                        is_active BOOLEAN DEFAULT TRUE
 );
 
 -- 2. スタッフマスタ
