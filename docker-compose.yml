@@ -1,12 +1,12 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: staff-app-db
+    container_name: ikichi_staffcard_project
     restart: always
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: staff_db
+      POSTGRES_DB: staff-app-db
     ports:
       - "5433:5432"
     volumes:
